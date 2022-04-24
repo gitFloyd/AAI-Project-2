@@ -2,6 +2,7 @@
 from random import randint, random
 from typing import Callable
 from Loss import Loss
+from Log import Log
 
 
 class Particle:
@@ -34,9 +35,11 @@ class Particle:
 
 class PSO:
 
+	DEBUG = True
+
 	POSITION = 1
 	VELOCITY = 2
-	PARAMS = {'Inertia': 1, 'Cognitive': 1, 'CognitiveRange': (0, 1), 'Social': 0.1, 'SocialRange': (0, 1)}
+	PARAMS = {'Inertia': 0.3, 'Cognitive': 1, 'CognitiveRange': (0, 1), 'Social': 0.1, 'SocialRange': (0, 1)}
 
 	def __init__(self, model:Callable[ [list[float], list[float]], list[float]], size:tuple[int,int], prand:tuple[int,int] = (-1,1), vrand:tuple[int,int] = (-1,1)) -> None:
 		if not callable(model):
@@ -71,8 +74,12 @@ class PSO:
 		for j in range(iterations):
 			for i, particle in enumerate(particles):
 				outputs.append(self.model(X, particle.Position()))
+
+				if PSO.DEBUG: Log.Add(outputs[-1])
 				
 				particle.Best(Loss.L2(outputs[-1], y))
+
+				if PSO.DEBUG: Log.Add(particle.Best()[0])
 
 				if self.globalBest[0] == None or particle.Best()[0] < self.globalBest[0]:
 					self.globalBest = particle.Best()
