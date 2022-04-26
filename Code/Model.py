@@ -20,7 +20,7 @@ class Layer:
 	def NumWeights(self, numInputs:int) -> int:
 		return numInputs
 	
-class DeepLayer(Layer):
+class DenseLayer(Layer):
 	def Execute(self, X:list[float], weights:list[float]) -> list[float]:
 		if self.activation_ == Layer.RELU: 
 			return [
