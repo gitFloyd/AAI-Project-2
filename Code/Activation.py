@@ -1,6 +1,13 @@
 import math
 
 class Activation:
+	"""A class containing various activation functions. All methods in this
+	class are invoked directly via Loss.L2(...), etc. Do not need to instantiate
+	these since there is no state.
+
+	Returns:
+		_type_: _description_
+	"""
 	
 	@staticmethod
 	def ReLU(value:float) -> float:
