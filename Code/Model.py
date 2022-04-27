@@ -60,7 +60,8 @@ class InputLayer(Layer):
 	"""Use this layer as the first layer of any model. This layer does not compute
 	any outputs. It simply outputs the input. No weights are needed for this layer.
 	"""
-	def Execute(self, X:list[float]) -> list[float]:
+	
+	def Execute(self, X:list[float], _) -> list[float]:
 		"""Simply output the input.
 
 		Args:
@@ -71,7 +72,7 @@ class InputLayer(Layer):
 		"""
 		return X
 
-	def NumWeights(self) -> int:
+	def NumWeights(self, _) -> int:
 		"""The InputLayer requires no weights.
 
 		Returns:
@@ -82,6 +83,7 @@ class InputLayer(Layer):
 class DenseLayer(Layer):
 	"""In this layer, every input is sent to every neuron.
 	"""
+	
 	def Execute(self, X:list[float], weights:list[float]) -> list[float]:
 		"""There are two branches to this method, one each for the two types of
 		activation functions we are supporting. The main difference is ReLU does
@@ -94,19 +96,27 @@ class DenseLayer(Layer):
 		Returns:
 			list[float]: A vector of outputs.
 		"""
+
+		if len(X) * self.size_ != self.NumWeights(len(X)):
+			print(len(X))
+			print(self.size_)
+			raise Exception("The number of weights is incorrect. len(X) = ", len(X), ", len(weights) = ", len(weights), ", and numWeights() = ", self.NumWeights(len(X)))
+
 		if self.activation_ == Layer.RELU: 
 			return [
 				Act.ReLU(sum([
-					x * weights[i + j * (len(X) - 1)] for (j, x) in enumerate(X)
+					x * weights[i + j * self.size_] for (j, x) in enumerate(X)
 				])) for i in range(self.size_)
 			]
 		else:
+			i = 0
+			j = 0
 			outputs = [
 				sum([
-					x * weights[i + j * (len(X) - 1)] for (j, x) in enumerate(X)
+					x * weights[i + j * self.size_] for (j, x) in enumerate(X)
 				]) for i in range(self.size_)
 			]
-			return [Act.Softmax(outputs, output) for output in outputs]
+			return [Act.Softmax(outputs, i) for (i, _) in enumerate(outputs)]
 
 	def NumWeights(self, numInputs:int) -> int:
 		"""The number of weights required is the size of the input vector

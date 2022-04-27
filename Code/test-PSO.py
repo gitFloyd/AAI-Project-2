@@ -1,21 +1,29 @@
 
 import PSO
 from Log import Log
+import Model
 
-def model1(X:list[float], weights:list[float]) -> list[float]:
-	return [sum([x * w for w in weights]) for x in X]
+Layer = Model.Layer
+DenseLayer = Model.DenseLayer
+InputLayer = Model.InputLayer
 
 #particles, weights
-size = (20,10)
 X = [1,2,3,4,5]
-y = [3,8,1,9,4]
-psoTest = PSO.PSO(model1, size)
+y = [1,0,0]
+
+myModel = Model.Model([
+	InputLayer(len(X)),
+	DenseLayer(10, Layer.RELU),
+	DenseLayer(3, Layer.SOFTMAX)
+])
+
+
+numParticles = 20
+numWeights = myModel.NumWeights()
+size = (numParticles, numWeights)
+psoTest = PSO.PSO(myModel.Execute, size)
 result = psoTest.Execute(X, y, iterations=10)
-print(model1(X, result))
+# print(result)
 
-Log.Print()
-
-""" 
-print(psoNum.Execute(31))
-print(psoStr.Execute('blahblah '))
- """
+# Log.Print()
+print(myModel.Execute([5,4,3,2,1], result))
