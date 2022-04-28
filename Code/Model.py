@@ -1,3 +1,4 @@
+import enum
 from Activation import Activation as Act
 
 class Layer:
@@ -55,6 +56,32 @@ class Layer:
 			int: The number of weights that the weight vector should contain.
 		"""
 		return numInputs
+	
+class FunctionLayer(Layer):
+	"""Use this layer to embed any arbitrary function into.
+	"""
+
+	def __init__(self, dimensions:tuple[int, int], activation:int = None) -> None:
+		pass
+
+	def Execute(self, X:list[float], _) -> list[float]:
+		"""Simply output the input.
+
+		Args:
+			X (list[float]): A vector of inputs.
+
+		Returns:
+			list[float]: The vector of inputs.
+		"""
+		return X
+
+	def NumWeights(self, _) -> int:
+		"""The InputLayer requires no weights.
+
+		Returns:
+			int: 0
+		"""
+		return 0
 	
 class InputLayer(Layer):
 	"""Use this layer as the first layer of any model. This layer does not compute
@@ -116,7 +143,7 @@ class DenseLayer(Layer):
 					x * weights[i + j * self.size_] for (j, x) in enumerate(X)
 				]) for i in range(self.size_)
 			]
-			return [Act.Softmax(outputs, i) for (i, _) in enumerate(outputs)]
+			return [Act.Softmax(outputs, i) for i in range(self.size_)]
 
 	def NumWeights(self, numInputs:int) -> int:
 		"""The number of weights required is the size of the input vector
@@ -142,7 +169,7 @@ class SparseLayer(Layer):
 		connections parameter. In other words, the connections parameter defines the number of neurons.
 
 		Args:
-			connections (list[tuple[int, list[int]]], optional): A data structure that species the
+			connections (list[tuple[int, list[int]]], optional): A data structure that specifies the
 			connections from inputs to neurons.
 			activation (int, optional): The type of activation function to use. See the comments
 			for the constructor of Layer for more details. Defaults to None.
@@ -179,7 +206,7 @@ class SparseLayer(Layer):
 		if self.activation_ == Layer.RELU: 
 			return [Act.ReLU(value) for value in values]
 		else:
-			return [Act.Softmax(values, value) for value in values]
+			return [Act.Softmax(values, i) for (i, _) in enumerate(values)]
 
 	def NumWeights(self, _) -> int:
 		"""The number of weights is determined when the object is instantiated.
@@ -212,7 +239,7 @@ class Model:
 		self.layers_ = layers
 
 	def AddLayer(self, layer:Layer) -> None:
-		"""Layers can be added after instantiated the object. Layers always get added
+		"""Layers can be added after instantiating the object. Layers always get added
 		to the end of the network.
 
 		Args:

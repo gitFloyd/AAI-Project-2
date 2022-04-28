@@ -1,4 +1,5 @@
 
+import Init
 import PSO
 from Log import Log
 import Model
@@ -14,14 +15,13 @@ y = [1,0,0]
 myModel = Model.Model([
 	InputLayer(len(X)),
 	DenseLayer(10, Layer.RELU),
-	DenseLayer(3, Layer.SOFTMAX)
+	DenseLayer(3, Layer.SOFTMAX),
 ])
 
 
 numParticles = 20
 numWeights = myModel.NumWeights()
-size = (numParticles, numWeights)
-psoTest = PSO.PSO(myModel.Execute, size)
+psoTest = PSO.PSO(myModel, (numParticles, myModel.NumWeights()))
 result = psoTest.Execute(X, y, iterations=10)
 # print(result)
 

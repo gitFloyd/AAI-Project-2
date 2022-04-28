@@ -3,6 +3,7 @@ from random import randint, random
 from typing import Callable
 from Loss import Loss
 from Log import Log
+import Model
 
 
 class Particle:
@@ -41,9 +42,9 @@ class PSO:
 	VELOCITY = 2
 	PARAMS = {'Inertia': 0.3, 'Cognitive': 1, 'CognitiveRange': (0, 1), 'Social': 0.1, 'SocialRange': (0, 1)}
 
-	def __init__(self, model:Callable[ [list[float], list[float]], list[float]], size:tuple[int,int], prand:tuple[int,int] = (-1,1), vrand:tuple[int,int] = (-1,1)) -> None:
-		if not callable(model):
-			raise Exception('The PSO class requires "Model" to be callable.')
+	def __init__(self, model:Model.Model, size:tuple[int,int], prand:tuple[int,int] = (-1,1), vrand:tuple[int,int] = (-1,1)) -> None:
+		if not isinstance(model, Model.Model):
+			raise Exception('The PSO class requires "model" to be of type Model.Model.')
 		self.model = model
 		self.size = size
 		self.prand = prand
@@ -73,7 +74,7 @@ class PSO:
 			iterations = 1
 		for j in range(iterations):
 			for i, particle in enumerate(particles):
-				outputs.append(self.model(X, particle.Position()))
+				outputs.append(self.model.Execute(X, particle.Position()))
 
 				if PSO.DEBUG: Log.Add(outputs[-1])
 				
