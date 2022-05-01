@@ -58,11 +58,11 @@ class Layer:
 		return numInputs
 	
 class FunctionLayer(Layer):
-	"""Use this layer to embed any arbitrary function into.
+	"""Use this layer to embed any arbitrary function into a Layer.
 	"""
 
 	def __init__(self, dimensions:tuple[int, int], activation:int = None) -> None:
-		pass
+		raise Exception("FunctionLayer is not implemented yet.")
 
 	def Execute(self, X:list[float], _) -> list[float]:
 		"""Simply output the input.

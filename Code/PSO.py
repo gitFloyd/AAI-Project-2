@@ -1,28 +1,32 @@
 
 from random import randint, random
-from typing import Callable
+from typing import TypeVar
 from Loss import Loss
 from Log import Log
 import Model
 
 
 class Particle:
-	def __init__(self, position:list[float], velocity:list[float] = None) -> None:
+
+	# A a list of floats
+	RealV = TypeVar('RealV', list[float], list[int])
+	ValuePositionT = TypeVar('ValuePositionT', tuple[float, list[float]], tuple[float, list[int]])
+	def __init__(self, position:RealV, velocity:RealV = None) -> None:
 		self.position_ = position
 		self.velocity_ = velocity
 		self.best_ = None
 
-	def Position(self, pos:list[float] = None) -> list[float]:
+	def Position(self, pos:RealV = None) -> RealV:
 		if pos != None:
 			self.position_ = pos
 		return self.position_
 
-	def Velocity(self, vel:list[float] = None) -> list[float]:
+	def Velocity(self, vel:RealV = None) -> RealV:
 		if vel != None:
 			self.velocity_ = vel
 		return self.velocity_
 
-	def Best(self, value: float = None, position:list[float] = None) -> tuple[float, list[float]]:
+	def Best(self, value: float = None, position:RealV = None) -> ValuePositionT:
 		if value == None:
 			return self.best_
 
@@ -41,8 +45,12 @@ class PSO:
 	POSITION = 1
 	VELOCITY = 2
 	PARAMS = {'Inertia': 0.3, 'Cognitive': 1, 'CognitiveRange': (0, 1), 'Social': 0.1, 'SocialRange': (0, 1)}
+	
+	RealV = TypeVar('RealV', list[float], list[int])
+	ValuePositionT = TypeVar('ValuePositionT', tuple[float, list[float]], tuple[float, list[int]])
+	IntBounds = TypeVar('IntBounds', tuple[int, int])
 
-	def __init__(self, model:Model.Model, size:tuple[int,int], prand:tuple[int,int] = (-1,1), vrand:tuple[int,int] = (-1,1)) -> None:
+	def __init__(self, model:Model.Model, size:IntBounds, prand:IntBounds = (-1,1), vrand:IntBounds = (-1,1)) -> None:
 		if not isinstance(model, Model.Model):
 			raise Exception('The PSO class requires "model" to be of type Model.Model.')
 		self.model = model
@@ -51,19 +59,19 @@ class PSO:
 		self.vrand = vrand
 		self.Reset()
 
-	def Execute(self, X:list[float], y:list[float], weights:list[list[float]] = None, iterations:int = 30) -> list[float]:
+	def Execute(self, X:RealV, y:RealV, weights:list[RealV] = None, iterations:int = 30) -> RealV:
 		"""If particles is None, then a list of particles is generated
 			with random elements using self.size and self.prand
 			Otherwise, particles are assumed to be initialized already
 
 		Args:
-			X (list[float]): Feature data to use with the model's prediction and the
+			X (RealV): Feature data to use with the model's prediction and the
 				loss function.
-			y (list[float]): Classification data to use with the model's prediction and the
+			y (RealV): Classification data to use with the model's prediction and the
 				loss function.
 
 		Returns:
-			list[list[float]]: The modified particle positions.
+			list[RealV]: The modified particle positions.
 		"""
 		outputs = []
 		if weights == None:
@@ -123,13 +131,18 @@ class PSO:
 	def UpdatePosition(self, particle:Particle) -> None:
 		particle.Position([sum(term) for term in zip(particle.Position(), particle.Velocity())])
 
-	def Reset(self) -> None:
+	def Reset(
+		self,
+		globalBest:ValuePositionT = (None, None),
+		isCleanSlate:bool = True,
+		globalBestRecords = list[ValuePositionT]
+	) -> None:
 		self.globalBest = (None, None)
 		self.isCleanSlate = True
 		self.globalBestRecords = []
 
 	# records are a list of (loss value, particle position)
-	def GetRecords(self) -> list[tuple[float, list[float]]]:
+	def GetRecords(self) -> list[ValuePositionT]:
 		return self.globalBestRecords
 
 	def __randList(self, size:int, ofType:int) -> list:
@@ -144,7 +157,7 @@ class PSO:
 		return [randint(rnd[0], rnd[1]-1) + random() for _ in range(size)]
 		
 
-	def RandParticles(self, size:tuple[int, int] = None) -> list[list]:
+	def RandParticles(self, size:IntBounds = None) -> list[Particle]:
 		if size == None:
 			size = self.size
 		if size[0] < 1 or size[1] < 1:
