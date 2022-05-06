@@ -1,4 +1,5 @@
-import enum
+import random
+import math
 from Activation import Activation as Act
 
 class Layer:
@@ -57,14 +58,19 @@ class Layer:
 		"""
 		return numInputs
 	
-class FunctionLayer(Layer):
-	"""Use this layer to embed any arbitrary function into a Layer.
+class FuzzyMembershipLayer(Layer):
+	"""This layer implements a fuzzy neural network layer.
 	"""
 
-	def __init__(self, dimensions:tuple[int, int], activation:int = None) -> None:
-		raise Exception("FunctionLayer is not implemented yet.")
+	def __init__(self, num_in:int, num_out:int, activation:int = None) -> None:
+		super().__init__(num_out, activation)
+		self.num_in_ = num_in
 
-	def Execute(self, X:list[float], _) -> list[float]:
+	def XGen(self, X):
+		for x in X:
+			yield x
+
+	def Execute(self, X:list[float], weights:list[float]) -> list[float]:
 		"""Simply output the input.
 
 		Args:
@@ -73,7 +79,20 @@ class FunctionLayer(Layer):
 		Returns:
 			list[float]: The vector of inputs.
 		"""
-		return X
+		xgen = self.XGen(X)
+		outputs = []
+		x = None
+		for i in range(self.size_):
+			try:
+				x = next(xgen)
+			except StopIteration:
+				xgen = self.XGen(X)
+				x = next(xgen)
+
+			# Fuzzy Set Membership Function
+			outputs.append(1 / (1 + (( (x - weights[3 * i + 2]) / weights[3 * i])**2)**weights[3 * i + 1]))
+
+		return outputs
 
 	def NumWeights(self, _) -> int:
 		"""The InputLayer requires no weights.
@@ -81,7 +100,7 @@ class FunctionLayer(Layer):
 		Returns:
 			int: 0
 		"""
-		return 0
+		return self.size_ * 3
 	
 class InputLayer(Layer):
 	"""Use this layer as the first layer of any model. This layer does not compute
@@ -97,6 +116,7 @@ class InputLayer(Layer):
 		Returns:
 			list[float]: The vector of inputs.
 		"""
+		#return [x / max(max(X), -min(X)) for x in X]
 		return X
 
 	def NumWeights(self, _) -> int:
@@ -124,15 +144,25 @@ class DenseLayer(Layer):
 			list[float]: A vector of outputs.
 		"""
 
+
+		# print('{}, {}, {}'.format(len(X), self.size_, len(weights)))
+
+
+
 		if len(X) * self.size_ != self.NumWeights(len(X)):
-			print(len(X))
-			print(self.size_)
 			raise Exception("The number of weights is incorrect. len(X) = ", len(X), ", len(weights) = ", len(weights), ", and numWeights() = ", self.NumWeights(len(X)))
 
-		if self.activation_ == Layer.RELU: 
+		if self.activation_ == Layer.RELU:
+
+
+			#for i in range(self.size_):
+			#	for (j, x) in enumerate(X):
+			#		if j + i * len(X) >= len(weights):
+			#			print('{} + {} * {} >= {}'.format(j, i, len(X), len(weights)))
+
 			return [
 				Act.ReLU(sum([
-					x * weights[i + j * self.size_] for (j, x) in enumerate(X)
+					x * weights[j + i * len(X)] for (j, x) in enumerate(X)
 				])) for i in range(self.size_)
 			]
 		else:
@@ -140,7 +170,7 @@ class DenseLayer(Layer):
 			j = 0
 			outputs = [
 				sum([
-					x * weights[i + j * self.size_] for (j, x) in enumerate(X)
+					x * weights[j + i * len(X)] for (j, x) in enumerate(X)
 				]) for i in range(self.size_)
 			]
 			return [Act.Softmax(outputs, i) for i in range(self.size_)]
@@ -163,7 +193,7 @@ class SparseLayer(Layer):
 	connections = [(0, [0, 1]), (1, [1, 2])]. In this case, x1 is mapped to n1 and n2 and
 	x2 is mapped to n2 and n3.
 	"""
-	def __init__(self, connections:list[tuple[int, list[int]]], activation:int = None) -> None:
+	def __init__(self, connections:dict[int:list[int]], activation:int = None) -> None:
 		"""The constructor for SparseLayer has a different signature than the abstract Layer. It takes
 		a connections parameter instead of size. We dynamically determine a value for size using the
 		connections parameter. In other words, the connections parameter defines the number of neurons.
@@ -174,18 +204,19 @@ class SparseLayer(Layer):
 			activation (int, optional): The type of activation function to use. See the comments
 			for the constructor of Layer for more details. Defaults to None.
 		"""
-		nodes = set()
+		neuron_ids = set()
 		self.connections_ = connections
 
 		# This layer cannot accomodate variable size inputs. Hence, we can determine
 		# the number of weights now.
 		self.numWeights_ = 0
-		for connection in connections:
+		for input_id in connections:
 			# Count the neurons
-			nodes.union(connection[1])
+			neuron_ids = neuron_ids.union(connections[input_id])
 			# Count the weights
-			self.numWeights_ += len(connection[1])
-		super.__init__(len(nodes), activation)
+			if input_id != None:
+				self.numWeights_ += len(connections[input_id])
+		super().__init__(len(neuron_ids), activation)
 	
 	def Execute(self, X:list[float], weights:list[float]) -> list[float]:
 		"""Executes the SparseLayer.
@@ -199,9 +230,10 @@ class SparseLayer(Layer):
 		"""
 
 		values = [0] * self.size_
-		for connection in self.connections_:
-			for index in connection[1]:
-				values[index] += X[connection[0]] * weights[index]
+		for input_id in self.connections_:
+			if input_id != None:
+				for neuron_id in self.connections_[input_id]:
+					values[neuron_id] += X[input_id] * weights[neuron_id]
 
 		if self.activation_ == Layer.RELU: 
 			return [Act.ReLU(value) for value in values]
@@ -215,6 +247,39 @@ class SparseLayer(Layer):
 			int: The number of weights required.
 		"""
 		return self.numWeights_
+
+	@staticmethod
+	def AddConnection(connections:dict[int:list[int]], neuron:int, i:int):
+		# max(1, i) --- If len(.) == 0 or len(.) < i
+
+		if i in connections:
+			connections[i].append(neuron)
+		else:
+			connections[i] = [neuron]
+	
+	@staticmethod
+	def CountConnections(connections):
+		return sum([len(connections[i]) for i in connections])
+
+	@classmethod
+	def RandConnections(cls, num_in:int, num_connections:int, num_out:int):
+		connections = {}
+		neurons = set()
+		neuron_ids = list(range(num_in))
+		while cls.CountConnections(connections) < num_connections:
+			random.shuffle(neuron_ids)
+			for i in neuron_ids:
+				connect_to = random.randint(0, num_out-1)
+				neurons.add(connect_to)
+				cls.AddConnection(connections, connect_to, i)
+				if cls.CountConnections(connections) == num_connections:
+					break
+		if len(neurons) < num_out:
+			for neuron in set(range(num_out)).difference(neurons):
+				cls.AddConnection(connections, neuron, None)
+		return connections
+				
+
 
 class Model:
 	"""The Model contains all of the Layers in the neural network. It also handles
@@ -252,7 +317,7 @@ class Model:
 		if not isinstance(self.layers_[0], InputLayer):
 			raise Exception("Model requires the first layer to be an InputLayer.")
 
-	def Execute(self, X:list[float], weights:list[float]) -> list[float]:
+	def Execute(self, X:list[float], weights:list[float] = None) -> list[float]:
 		"""Executes the entire neural network.
 
 		Args:
@@ -263,6 +328,9 @@ class Model:
 		Returns:
 			list[float]: A vector of outputs for the neural network.
 		"""
+
+		if weights == None:
+			weights = [random.randint(-1,0) + random.random() for _ in range(self.NumWeights()) ]
 		start = 0
 		end = 0
 		results = X

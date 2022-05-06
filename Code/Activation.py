@@ -32,5 +32,6 @@ class Activation:
 		Returns:
 			float: The activated value.
 		"""
-		return math.exp(values[index]) / sum([math.exp(value) for value in values])
+		maxValue = max(max(max(values), -min(values)), 1)
+		return math.exp(values[index] / maxValue) / sum([math.exp(value / maxValue) for value in values])
 

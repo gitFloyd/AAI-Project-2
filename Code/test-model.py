@@ -1,15 +1,33 @@
 import Model
+import Dataset as DS
+Dataset = DS.Dataset
+Pistachio = DS.Pistachio
 
-d_in = Model.InputLayer(3)
-d1 = Model.DenseLayer(3)
-d2 = Model.DenseLayer(4)
-d3 = Model.DenseLayer(2)
 
-X = [10,2.222,13.4574,4]
-weights = [-0.5269779407873274, -0.10167654360408651, 0.6189301541618253, 0.23700266484996846, 0.5574468791466884, -0.3905119048139203, 0.9400126715518587, 0.8461318014786008, 0.4226203626245758, -0.18427235776359796, -0.3008161224993775, -0.9452369012783766]
-""" 
-print(dl.Execute(X, weights))
-print(dl.Execute2(X, weights))
- """
+pistachios = Pistachio(Dataset.LINUX_NL)
+pistachios.Load()
+#pistachios.Shuffle()
+data = pistachios.Fetch('Area', 'Solidity', 'Roundness', 'Compactness', 'Shapefactor_1', 'Class', limit = 10, offset = 0)
+X = [value[0:-1] for value in data]
+y = [value[-1] for value in data]
+
+
+d_in = Model.InputLayer(5)
+d1 = Model.DenseLayer(10)
+d2 = Model.DenseLayer(10)
+d3 = Model.DenseLayer(2, Model.Layer.SOFTMAX)
 model = Model.Model([d_in, d1, d2, d3])
-print(model.NumWeights())
+
+
+for row in pistachios.Data():
+	print(row[-1])
+exit()
+
+
+predict = model.Execute(X[0])
+print(pistachios.Classes())
+print(X[0])
+print(y[0])
+print(predict)
+
+
