@@ -39,7 +39,7 @@ class Particle:
 			#if self.velocity_ != None:
 			#	print('Particle change vector loss: ', Loss.L2(self.velocity_, vel))
 			factor = sum([v**2 for v in vel]) ** 0.5
-			if factor > 2:
+			if factor > 4:
 				vel = [v/factor for v in vel]
 			self.velocity_ = vel
 		return self.velocity_
@@ -47,8 +47,9 @@ class Particle:
 	def Boost(self):
 		vel = self.Velocity()
 		v_len = sum([v**2 for v in vel] )** 0.5
-		boost = (1-v_len)/v_len
-		self.Velocity([v * boost for v in vel])
+		if v_len <= 1:
+			boost = 1.5 - v_len * 0.5
+			self.Velocity([v * boost for v in vel])
 
 	def Best(self, value:float = None, position:RealV = None) -> ValuePositionT:
 		if value == None:
@@ -70,7 +71,7 @@ class PSO:
 
 	POSITION = 1
 	VELOCITY = 2
-	PARAMS = {'Inertia': 0.5, 'Cognitive': 0.6, 'CognitiveRange': (0, 1), 'Social': 0.7, 'SocialRange': (0, 1)}
+	PARAMS = {'Inertia': 0.5, 'Cognitive': 3, 'CognitiveRange': (0, 1), 'Social': 0.2, 'SocialRange': (0, 1)}
 	
 	RealV = TypeVar('RealV', list[float], list[int])
 	ValuePositionT = TypeVar('ValuePositionT', tuple[float, list[float]], tuple[float, list[int]])

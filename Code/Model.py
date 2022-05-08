@@ -65,10 +65,11 @@ class FuzzyMembershipLayer(Layer):
 	def __init__(self, num_in:int, num_out:int, activation:int = None) -> None:
 		super().__init__(num_out, activation)
 		self.num_in_ = num_in
+		self.sparseLayer = None
 
 	def XGen(self, X):
-		for x in X:
-			yield x
+		for i, x in enumerate(X):
+			yield i, x
 
 	def Execute(self, X:list[float], weights:list[float]) -> list[float]:
 		"""Simply output the input.
@@ -81,16 +82,25 @@ class FuzzyMembershipLayer(Layer):
 		"""
 		xgen = self.XGen(X)
 		outputs = []
+		connections = {}
 		x = None
 		for i in range(self.size_):
 			try:
-				x = next(xgen)
+				j, x = next(xgen)
 			except StopIteration:
 				xgen = self.XGen(X)
-				x = next(xgen)
+				j, x = next(xgen)
 
 			# Fuzzy Set Membership Function
 			outputs.append(1 / (1 + (( (x - weights[3 * i + 2]) / weights[3 * i])**2)**weights[3 * i + 1]))
+			if j not in connections:
+				connections[j] = [i]
+			else:
+				connections[j].append(i)
+
+		if self.sparseLayer == None:
+			self.sparseLayer = SparseLayer(connections, self.activation_)
+		outputs = self.sparseLayer.Execute(outputs, weights[3 * self.size_:])
 
 		return outputs
 
@@ -100,7 +110,7 @@ class FuzzyMembershipLayer(Layer):
 		Returns:
 			int: 0
 		"""
-		return self.size_ * 3
+		return self.size_ * 4
 	
 class InputLayer(Layer):
 	"""Use this layer as the first layer of any model. This layer does not compute

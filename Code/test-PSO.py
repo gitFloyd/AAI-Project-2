@@ -32,12 +32,12 @@ val_data = pistachios.Fetch('Area', 'Solidity', 'Roundness', 'Compactness', 'Sha
 val_X = [row[0:-1] for row in val_data]
 val_y = [row[-1] for row in val_data]
 
-randConnections = SparseLayer.RandConnections(len(X[0]), len(X[0])*2, len(X[0]))
+#randConnections = SparseLayer.RandConnections(len(X[0]), len(X[0])*2, len(X[0]))
 myModel = Model.Model([
 	InputLayer(len(X[0])),
 	#SparseLayer(randConnections, Layer.RELU),
 	FMLayer(len(X[0]), len(X[0]) * 2, Layer.RELU),
-	DenseLayer(16, Layer.RELU),
+	DenseLayer(128, Layer.RELU),
 	DenseLayer(16, Layer.RELU),
 	DenseLayer(2, Layer.SOFTMAX),
 ])
@@ -50,7 +50,7 @@ numParticles = 20
 numWeights = myModel.NumWeights()
 psoTest = PSO.PSO(myModel, (numParticles, myModel.NumWeights()))
 
-records = psoTest.ExecuteMany(X[0:numInputs], y[0:numInputs], iterations=10)
+records = psoTest.ExecuteMany(X[0:numInputs], y[0:numInputs], iterations=20)
 # bestWeights = records[-1][1]
 bestWeights = records.pop()[1]
 
